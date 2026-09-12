@@ -1,26 +1,27 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
+import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class EmployeesService {
   private employees : CreateEmployeeDto[] =  [{
-    id: 1,
+    id: uuid(),
     name: 'John',
     lastName: 'Doe',
     phoneNumber: '1234567890'
   },
   {
-    id: 2,
+    id: uuid(),
     name: 'Jane',
     lastName: 'Smith',
     phoneNumber: '0987654321'
   }
 ];
   create(createEmployeeDto: CreateEmployeeDto) {
-    createEmployeeDto.id = this.employees.length+1;
+    createEmployeeDto.id = uuid();
     console.log('Creating employee:', createEmployeeDto);
-    this.employees.push(createEmployeeDto);
+    this.employees.push(createEmployeeDto); 
     return this.employees;
   }
 
@@ -28,20 +29,26 @@ export class EmployeesService {
     return this.employees;
   }
 
-  findOne(id: number) {
-    return this.employees.find(employee => employee.id === id);
+  findOne(id: string) {
+    const employee = this.employees.find(employee => employee.id === id)
+    if(!employee) throw new NotFoundException(`Employee with id ${id} not found`);
+    return employee;
   }
 
-  update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
+  update(id: string, updateEmployeeDto: UpdateEmployeeDto) {
     let employee: CreateEmployeeDto = this.findOne(id) as CreateEmployeeDto;
-    employee = { ...employee, ...updateEmployeeDto };
+    if(!employee) throw new NotFoundException(`Employee with id ${id} not found`);
 
+    employee = { ...employee, ...updateEmployeeDto };
     this.employees = this.employees.map(emp => emp.id === id ? employee : emp);
     return employee;  
   }
 
-  remove(id: number) {
-    this.employees = this.employees.filter(employee => employee.id !== id);
+  remove(id: string) {
+    const employeeToDelete = this.findOne(id);
+    if(!employeeToDelete) throw new NotFoundException(`Employee with id ${id} not found`);
+    
+    this.employees = this.employees.filter(employee => employee.id !== employeeToDelete.id);
     return this.employees;
   }
 }
