@@ -34,7 +34,7 @@ export class ProductsService {
 
   create(createProductDto: CreateProductDto) {
     createProductDto.productId = uuid();
-    createProductDto.provider = uuid();
+    if(!createProductDto.provider) createProductDto.provider = uuid();
     this.products.push(createProductDto);
 
     console.log('Creating product:', createProductDto);
@@ -54,8 +54,9 @@ export class ProductsService {
   }
 
   findByProvider(providerId: string) {
-    const product = this.products.find(product => product.provider === providerId);
-    if(!product) throw new NotFoundException();
+    const product = this.products.filter(product => product.provider === providerId);
+
+    if(!product || product.length === 0) throw new NotFoundException();
 
     return product;
   }
