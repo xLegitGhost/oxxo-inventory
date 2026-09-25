@@ -18,7 +18,11 @@ export class ProductsService {
   }
 
   async findAll() {
-    return await this.productRepository.find();
+    return await this.productRepository.find({
+      relations: {
+        provider: true,
+      }
+    });
   }
 
   async findOne(id: string) {
@@ -27,11 +31,12 @@ export class ProductsService {
     return product;
   }
 
-  async findByProvider(providerId: string) {
-    return await this.productRepository.find({
-      where: { provider: providerId },
-    });
-  }
+
+  // async findByProvider(providerId: string) {
+  //   return await this.productRepository.find({
+  //     where: { provider: providerId },
+  //   });
+  // }
 
   async update(id: string, updateProductDto: UpdateProductDto) {
     const product = await this.productRepository.preload({
