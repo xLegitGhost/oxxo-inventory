@@ -24,8 +24,7 @@ export class ProductsController {
 
   @Get("p/:providerId")
   findOneByProviderId(@Param('providerId', new ParseUUIDPipe({ version: '4' })) providerId: string) {
-    // TODO: Implement the logic to find products by providerId
-    return "Not implemented yet";
+    return this.productsService.findByProvider(providerId);
   }
 
   @Patch(':id')

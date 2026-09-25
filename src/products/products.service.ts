@@ -32,11 +32,16 @@ export class ProductsService {
   }
 
 
-  // async findByProvider(providerId: string) {
-  //   return await this.productRepository.find({
-  //     where: { provider: providerId },
-  //   });
-  // }
+  async findByProvider(providerId: string) {
+    const product = await this.productRepository.findBy({
+      provider: {
+        providerId: providerId
+      }
+    })
+    if(!product) throw new NotFoundException();
+
+    return product;
+  }
 
   async update(id: string, updateProductDto: UpdateProductDto) {
     const product = await this.productRepository.preload({

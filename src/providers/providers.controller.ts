@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe } from '@nestjs/common';
 import { ProvidersService } from './providers.service.js';
 import { CreateProviderDto } from './dto/create-provider.dto.js';
 import { UpdateProviderDto } from './dto/update-provider.dto.js';
@@ -17,18 +17,23 @@ export class ProvidersController {
     return this.providersService.findAll();
   }
 
+  @Get("name/:providerName")
+  findOneByName(@Param('providerName') providerName: string) {
+    return this.providersService.findOneByName(providerName)
+  }
+
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', new ParseUUIDPipe({version: "4"})) id: string) {
     return this.providersService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProviderDto: UpdateProviderDto) {
+  update(@Param('id', new ParseUUIDPipe({version: "4"})) id: string, @Body() updateProviderDto: UpdateProviderDto) {
     return this.providersService.update(id, updateProviderDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', new ParseUUIDPipe({version: "4"})) id: string) {
     return this.providersService.remove(id);
   }
 }

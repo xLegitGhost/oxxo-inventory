@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProviderDto } from './dto/create-provider.dto.js';
 import { UpdateProviderDto } from './dto/update-provider.dto.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Provider } from './entities/provider.entity.js';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 
 @Injectable()
 export class ProvidersService {
@@ -18,18 +18,51 @@ export class ProvidersService {
   }
 
   findAll() {
-    return `This action returns all providers`;
+    return this.providerRepository.find({
+      relations: {
+        products: true
+      }
+    });
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} provider`;
+  async findOneByName(providerName: string){
+    const provider = await this.providerRepository.findOneBy({
+        providerName: Like(`%${providerName}%`)
+    })
+    if(!provider) throw new NotFoundException(`Provider with name ${providerName} not found`);
+    return provider;
   }
 
-  update(id: string, updateProviderDto: UpdateProviderDto) {
-    return `This action updates a #${id} provider`;
+  async findOne(id: string) {
+    const provider = await this.providerRepository.findOneBy({
+      providerId: id
+    })
+    if(!provider) throw new NotFoundException(`Provider with id ${id} not found`);
+    return provider;
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} provider`;
+  async update(id: string, updateProviderDto: UpdateProviderDto) {
+    const newProvider = await this.providerRepository.preload({
+      providerId: id,
+      ...updateProviderDto
+    })
+
+    if (!newProvider) {
+      throw new NotFoundException(`Provider with id ${id} not found`);
+    } 
+
+    return this.providerRepository.save(newProvider);
+  }
+
+  async remove(id: string) {
+    const result = await this.providerRepository.delete({
+      providerId: id
+    });
+
+    if(result.affected === 0) throw new NotFoundException();
+
+    return {
+      message: "Provider eliminado correctamente"
+    };
   }
 }
