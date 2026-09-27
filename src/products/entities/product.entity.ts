@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Provider } from '../../providers/entities/provider.entity.js';
 
 @Entity()
@@ -17,6 +17,9 @@ export class Product {
 
   @ManyToOne(() => Provider, (provider) => provider.products, {
     eager: true
+  }) 
+  @JoinColumn({
+    name: 'providerId'
   })
   provider: Provider;
 } 

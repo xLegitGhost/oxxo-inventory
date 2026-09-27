@@ -2,8 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateManagerDto } from './dto/create-manager.dto.js';
 import { UpdateManagerDto } from './dto/update-manager.dto.js';
 import { Manager } from './entities/manager.entity.js';
-import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm/browser/repository/Repository.js';
 
 @Injectable()
 export class ManagersService {

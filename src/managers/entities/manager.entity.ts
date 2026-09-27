@@ -1,4 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import type { Relation } from "typeorm";
+import { Location } from "../../locations/entities/location.entity.js";
 
 @Entity()
 export class Manager {
@@ -13,5 +15,6 @@ export class Manager {
     @Column("text")
     managerPhoneNumber: string;
 
-    // TODO: Relation with location, viceverse
+    @OneToOne(() => Location)
+    location: Relation<Location>;
 }
