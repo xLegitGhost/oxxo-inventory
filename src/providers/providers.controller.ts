@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe } from
 import { ProvidersService } from './providers.service.js';
 import { CreateProviderDto } from './dto/create-provider.dto.js';
 import { UpdateProviderDto } from './dto/update-provider.dto.js';
+import { Auth } from '../auth/decorators/auth.decorator.js';
 
 @Controller('providers')
 export class ProvidersController {
@@ -13,13 +14,14 @@ export class ProvidersController {
   }
 
   @Get()
+  @Auth('admin')
   findAll() {
     return this.providersService.findAll();
   }
 
   @Get("name/:providerName")
   findOneByName(@Param('providerName') providerName: string) {
-    return this.providersService.findOneByName(providerName)
+    return this.providersService.findOneByName(providerName);
   }
 
   @Get(':id')

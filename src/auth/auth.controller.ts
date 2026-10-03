@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
-import { UpdateUserDto } from './dto/update-user.dto.js';
+import { LoginUserDto } from './dto/login-user.dto.js';
 
 @Controller('auth')
 export class AuthController {
@@ -13,8 +13,7 @@ export class AuthController {
   }
 
   @Post('login')
-  signIn(@Body() createUserDto: CreateUserDto){
-    return this.authService.loginUser(createUserDto);
+  signIn(@Body() loginUserDto: LoginUserDto){
+    return this.authService.loginUser(loginUserDto);
   }
-
 }

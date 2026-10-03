@@ -3,13 +3,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity.js';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto.js';
+import { LoginUserDto } from './dto/login-user.dto.js';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
 
-  constructor(@InjectRepository(User) private readonly userRepository: Repository<User>){}
+  constructor(
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
+    private readonly jwtService: JwtService
+  ){}
 
   async registerUser(createUserDto: CreateUserDto) {
     const isEmailExist = await this.userRepository.findOneBy({
@@ -27,9 +31,9 @@ export class AuthService {
     return this.userRepository.save(user);
   }
 
-  async loginUser(createUserDto: CreateUserDto){
+  async loginUser(loginUserDto: LoginUserDto){
     const user = await this.userRepository.findOneBy({
-      userEmail: createUserDto.userEmail,
+      userEmail: loginUserDto.userEmail,
     });
 
     if (!user) {
@@ -37,7 +41,7 @@ export class AuthService {
     }
 
     const passwordMatches = await bcrypt.compare(
-      createUserDto.userPassword,
+      loginUserDto.userPassword,
       user.userPassword,
     );
 
@@ -45,14 +49,14 @@ export class AuthService {
       throw new UnauthorizedException('Correo o contraseña incorrectos');
     }
 
-    const token = jwt.sign(
-      {
-        userId: user.userId,
-        userEmail: user.userEmail,
-      },
-      'secret',
-      { expiresIn: '1h' },
-    );
+    const payload = {
+      userId: user.userId,
+      userEmail: user.userEmail,
+      userPassword: user.userPassword,
+      userRoles: user.userRoles,
+    };
+
+    const token = this.jwtService.sign(payload);
 
     return token;
   }
