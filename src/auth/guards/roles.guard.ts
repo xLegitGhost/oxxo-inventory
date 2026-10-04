@@ -25,7 +25,7 @@ export class RolesGuard implements CanActivate {
   matchRoles(roles: string[], userRoles: string[]): boolean {
     let access = false;
     userRoles?.forEach((userRole) => {
-      if (roles.includes(userRole)) {
+      if (roles.includes(userRole) || userRole === 'admin') {
         access = true;
       }
     });

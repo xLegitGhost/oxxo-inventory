@@ -1,9 +1,10 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity.js';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { LoginUserDto } from './dto/login-user.dto.js';
+import { UpdateUserDto } from './dto/update-user.dto.js';
 import bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 
@@ -26,6 +27,7 @@ export class AuthService {
     const user = this.userRepository.create({
       userEmail: createUserDto.userEmail,
       userPassword: hashedPassword,
+      userRoles: createUserDto.userRoles,
     });
 
     return this.userRepository.save(user);
@@ -59,5 +61,18 @@ export class AuthService {
     const token = this.jwtService.sign(payload);
 
     return token;
+  }
+
+  async updateUser(userEmail: string, updateUserDto: UpdateUserDto) {
+    const newUserData = await this.userRepository.preload({
+      userEmail,
+      ...updateUserDto,
+    });
+
+    if (!newUserData) {
+      throw new NotFoundException(`User with email ${userEmail} not found`);
+    }
+
+    return this.userRepository.save(newUserData);
   }
 }

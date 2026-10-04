@@ -12,6 +12,7 @@ import { RolesGuard } from './guards/roles.guard.js';
   imports: [
     TypeOrmModule.forFeature([User]),
     JwtModule.register({
+      global: true,
       secret: JWT_KEY,
       signOptions: { expiresIn: EXPIRES_IN },
     }),
