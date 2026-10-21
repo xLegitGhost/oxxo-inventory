@@ -23,7 +23,7 @@ export class LocationsService {
   }
 
   async findOne(id: number) {
-    const location = await this.locationRepository.findAndCountBy({
+    const location = await this.locationRepository.findOneBy({
       locationId: id
     })
     if(!location) throw new NotFoundException();
