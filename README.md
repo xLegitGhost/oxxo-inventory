@@ -1,114 +1,156 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# OXXO Inventory Management API 🏪📦
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Enterprise-grade retail inventory and multi-store management backend API, built with **NestJS**, **TypeScript**, **PostgreSQL**, and **TypeORM**. Designed under a Clean Modular Monolith architecture with role-based access control (RBAC), cookie-authenticated sessions, and automated Docker containerization.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+> 🌐 **Companion Frontend Repository**: [OXXO Inventory Frontend (`oxxo-front`)](../oxxo-front/README.md) — Built with Next.js 14 (App Router), React Server Components, and Tailwind CSS.
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🏛️ Architectural Overview
 
-## Project setup
+The application follows the **Modular Monolith** pattern with **Domain-Driven Design (DDD)** bounded contexts. Each business capability lives in an isolated, high-cohesion module containing its own entities, DTOs, services, and REST controllers.
 
-```bash
-$ pnpm install
+```
+src/
+├── auth/           # Authentication, JWT strategy, bcrypt hashing, and cookie issuance
+├── locations/      # Oxxo retail store branches, addresses, and physical locations
+├── regions/        # Regional administrative groupings for stores
+├── products/       # Inventory catalog, SKU tracking, pricing, and stock
+├── providers/      # Supplier and vendor supply-chain management
+├── employees/      # Store employees, shifts, and contact information
+└── managers/       # Store managers, leadership hierarchy, and permissions
 ```
 
-## Compile and run the project
+```mermaid
+graph TD
+    Client["Client (Next.js 14 Frontend)"]
+    Gateway["NestJS API Gateway / Express"]
+    AuthModule["Auth Module (JWT & HttpOnly Cookies)"]
+    StoresModule["Locations & Regions"]
+    CatalogModule["Products & Providers"]
+    StaffModule["Employees & Managers"]
+    Database[("PostgreSQL Database")]
 
-```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+    Client -->|HTTPS + HttpOnly Cookies| Gateway
+    Gateway --> AuthModule
+    Gateway --> StoresModule
+    Gateway --> CatalogModule
+    Gateway --> StaffModule
+    AuthModule --> Database
+    StoresModule --> Database
+    CatalogModule --> Database
+    StaffModule --> Database
 ```
 
-## Run tests
+---
 
+## ⚖️ Architectural Decisions & Trade-Offs
+
+### 1. Modular Monolith vs. Microservices
+* **Decision**: Implemented a single codebase divided into strict, decoupled domain modules rather than deploying independent microservices.
+* **Benefits**: 
+  - Zero inter-service network latency and guaranteed transactional consistency (ACID).
+  - Streamlined continuous integration, local development, and unified debugging.
+  - Single database connection pool and atomic schema migrations.
+* **Trade-Off**: Scaling requires horizontal duplication of the entire monolith. However, modular boundaries ensure future extraction of high-load domains (e.g., `products` inventory) into standalone services without refactoring business logic.
+
+### 2. TypeORM & PostgreSQL Relational Schema
+* **Decision**: Modeled domain relationships (1:1, 1:N, N:M) using PostgreSQL with TypeORM declarative entities.
+* **Benefits**:
+  - Enforces relational data integrity at the database engine level (Foreign Keys, cascading rules, unique indexes).
+  - Strongly typed data contracts through TypeScript decorators and auto-generated migrations.
+* **Trade-Off**: Active-record/data-mapper ORM layers introduce query overhead. Mitigated by using parameterized TypeORM `QueryBuilder` for high-throughput listing endpoints and disabling eager loading across deep nested trees to prevent N+1 query bottlenecks.
+
+### 3. Stateful HttpOnly Cookies vs. Header-based JWT Tokens
+* **Decision**: Issue JWT tokens inside secure, `HttpOnly`, `SameSite=Lax` cookies rather than returning tokens in the JSON response body.
+* **Benefits**:
+  - Eliminates client-side token exposure to JavaScript, mitigating Cross-Site Scripting (XSS) credential theft.
+  - Seamless integration with Server-Side Rendering (SSR) in Next.js Server Components (`cookies()` API).
+* **Trade-Off**: Requires strict Cross-Origin Resource Sharing (CORS) whitelisting and credential delegation (`withCredentials: true`), making local multi-origin debugging (`127.0.0.1` vs. `localhost`) sensitive to cookie domain scoping.
+
+### 4. Vitest & Oxlint Tooling Modernization
+* **Decision**: Adopted Vitest for unit/integration testing and Oxlint for static analysis over traditional Jest and ESLint.
+* **Benefits**:
+  - Execution speed improvements exceeding 5x-10x for test suites and linting.
+  - Native ESM and TypeScript compilation support without complex Babel or `ts-jest` transformers.
+* **Trade-Off**: Requires custom Vite configuration paths (`vite-tsconfig-paths`) for NestJS dependency injection metadata reflection.
+
+---
+
+## 🚀 Tech Stack
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Runtime** | Node.js (ESM) | Non-blocking I/O runtime |
+| **Framework** | NestJS 12 | Enterprise architectural backbone and DI container |
+| **Language** | TypeScript 6 | Static type safety and strict schema contracts |
+| **Database** | PostgreSQL 16 | Relational persistence engine |
+| **ORM** | TypeORM | Entity relational mapping and migration management |
+| **Security** | Bcrypt & JSONWebToken | Password hashing and signed auth payloads |
+| **Validation** | `class-validator` & `class-transformer` | Request payload sanitization and DTO pipes |
+| **Testing** | Vitest & Supertest | Unit, service mock, and E2E API verification |
+| **Linter** | Oxlint | High-performance Rust-based static code analyzer |
+| **Infra** | Docker & Docker Compose | Containerized local database and environment parity |
+
+---
+
+## 🛠️ Getting Started
+
+### Prerequisites
+- Node.js `>= 20.x`
+- `pnpm` `>= 9.x`
+- Docker & Docker Compose
+
+### 1. Clone & Install Dependencies
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+git clone <repository-url>
+cd ocso-project
+pnpm install
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+### 2. Environment Configuration
+Create a `.env` file in the project root:
+```env
+PORT=4000
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=mysecretpassword
+DB_NAME=oxxo_inventory
+JWT_SECRET=super_secret_jwt_key_oxxo_enterprise
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 3. Spin Up Infrastructure
+```bash
+docker-compose up -d
+```
 
-## Observability
+### 4. Run Application
+```bash
+# Development watch mode
+pnpm run start:dev
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+# Production build & run
+pnpm run build
+pnpm run start:prod
+```
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+### 5. Run Test Suite
+```bash
+# Run unit & integration tests
+pnpm run test
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+# Run tests with coverage report
+pnpm run test:cov
 
-## Resources
+# Run End-to-End (E2E) tests
+pnpm run test:e2e
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## 🔒 Security Best Practices Implemented
+- **CORS Allowlist**: Configured strictly for authorized frontend origins with `credentials: true`.
+- **Validation Pipe**: Global pipe with `whitelist: true` and `forbidNonWhitelisted: true` to prevent mass-assignment attacks.
+- **Password Protection**: Multi-round Salt hashing with `bcrypt` before database persistence.
+- **Session Lifespan**: Ephemeral tokens scoped with strict expiration policies.
