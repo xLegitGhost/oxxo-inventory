@@ -7,10 +7,9 @@ import { Repository, Like } from 'typeorm';
 
 @Injectable()
 export class ProvidersService {
-
   constructor(
     @InjectRepository(Provider)
-    private providerRepository: Repository<Provider>
+    private providerRepository: Repository<Provider>,
   ) {}
 
   create(createProviderDto: CreateProviderDto) {
@@ -20,49 +19,54 @@ export class ProvidersService {
   findAll() {
     return this.providerRepository.find({
       relations: {
-        products: true
-      }
+        products: true,
+      },
     });
   }
 
-  async findOneByName(providerName: string){
+  async findOneByName(providerName: string) {
     const provider = await this.providerRepository.findOneBy({
-        providerName: Like(`%${providerName}%`)
-    })
-    if(!provider) throw new NotFoundException(`Provider with name ${providerName} not found`);
+      providerName: Like(`%${providerName}%`),
+    });
+    if (!provider)
+      throw new NotFoundException(`Provider with name ${providerName} not found`);
     return provider;
   }
 
   async findOne(id: string) {
-    const provider = await this.providerRepository.findOneBy({
-      providerId: id
-    })
-    if(!provider) throw new NotFoundException(`Provider with id ${id} not found`);
+    const provider = await this.providerRepository.findOne({
+      where: { providerId: id },
+      relations: {
+        products: true,
+      },
+    });
+    if (!provider)
+      throw new NotFoundException(`Provider with id ${id} not found`);
     return provider;
   }
 
   async update(id: string, updateProviderDto: UpdateProviderDto) {
     const newProvider = await this.providerRepository.preload({
       providerId: id,
-      ...updateProviderDto
-    })
+      ...updateProviderDto,
+    });
 
     if (!newProvider) {
       throw new NotFoundException(`Provider with id ${id} not found`);
-    } 
+    }
 
     return this.providerRepository.save(newProvider);
   }
 
   async remove(id: string) {
     const result = await this.providerRepository.delete({
-      providerId: id
+      providerId: id,
     });
 
-    if(result.affected === 0) throw new NotFoundException();
+    if (result.affected === 0) throw new NotFoundException();
 
     return {
-      message: "Provider eliminado correctamente"
+      message: 'Provider eliminado correctamente',
     };
   }
 }
