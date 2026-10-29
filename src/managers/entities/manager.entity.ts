@@ -21,5 +21,5 @@ export class Manager {
 
     @OneToOne(() => User)
     @JoinColumn({ name: "userId" })
-    user: User;
+    user: Relation<User>;
 }

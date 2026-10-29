@@ -32,8 +32,8 @@ export class Location {
     @JoinColumn({
         name: "regionId"
     })
-    region: Region;
+    region: Relation<Region>;
 
     @OneToMany(() => Employee, (employee) => employee.location)
-    employees: Employee[];
+    employees: Relation<Employee[]>;
 }

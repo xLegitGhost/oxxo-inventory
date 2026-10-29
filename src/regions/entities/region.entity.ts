@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
+import type { Relation } from "typeorm";
 import { Location } from "../../locations/entities/location.entity.js";
 
 @Entity()
@@ -14,6 +15,6 @@ export class Region {
     regionStates: string[];
 
     @OneToMany(() => Location, (location) => location.region)
-    locations: Location[];
+    locations: Relation<Location[]>;
 
 }
