@@ -25,6 +25,5 @@ export class CreateManagerDto {
 
     @ApiPropertyOptional()
     @IsOptional()
-    @IsObject()
-    location?: Location;
+    location?: any;
 }
