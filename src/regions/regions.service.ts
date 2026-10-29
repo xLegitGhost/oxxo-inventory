@@ -7,12 +7,10 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class RegionsService {
-
   constructor(
     @InjectRepository(Region)
-    private regionRepository: Repository<Region> 
-  ){}
-
+    private regionRepository: Repository<Region>,
+  ) {}
 
   create(createRegionDto: CreateRegionDto) {
     return this.regionRepository.save(createRegionDto);
@@ -23,27 +21,26 @@ export class RegionsService {
   }
 
   async findOne(id: number) {
-    const region = await this.regionRepository.findBy({
-      regionId: id
-    })
-    if(!region) throw new NotFoundException();
+    const region = await this.regionRepository.findOneBy({
+      regionId: id,
+    });
+    if (!region) throw new NotFoundException(`Region with id ${id} not found`);
     return region;
   }
 
   async update(id: number, updateRegionDto: UpdateRegionDto) {
     const newRegion = await this.regionRepository.preload({
       regionId: id,
-      ...updateRegionDto
-    })
+      ...updateRegionDto,
+    });
 
-    if(!newRegion) throw new NotFoundException();
+    if (!newRegion) throw new NotFoundException(`Region with id ${id} not found`);
 
     return this.regionRepository.save(newRegion);
   }
 
   async remove(id: number) {
-    return await this.regionRepository.delete({
-      regionId: id
-    })
+    const region = await this.findOne(id);
+    return await this.regionRepository.remove(region);
   }
 }

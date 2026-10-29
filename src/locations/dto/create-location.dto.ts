@@ -22,4 +22,8 @@ export class CreateLocationDto {
     @IsOptional()
     @IsObject()
     region?: Region;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    manager?: any;
 }
