@@ -22,7 +22,7 @@ export class CreateProductDto {
   @IsInt()
   countSeal: number;
 
-  @ApiProperty()
-  @IsObject()
-  provider: Provider;
+  @ApiPropertyOptional()
+  @IsOptional()
+  provider?: any;
 }
