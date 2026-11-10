@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe, UseIn
 import type { Express } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EmployeesService } from './employees.service.js';
+import { AwsService } from '../aws/aws.service.js';
 import { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
 import { Auth } from '../auth/decorators/auth.decorator.js';
@@ -13,7 +14,10 @@ import { ApiTags } from '@nestjs/swagger';
 @ApiAuth()
 @Controller('employees')
 export class EmployeesController {
-  constructor(private readonly employeesService: EmployeesService) {}
+  constructor(
+    private readonly employeesService: EmployeesService,
+    private readonly awsService: AwsService,
+  ) {}
 
   @Auth(ROLES.MANAGER)
   @Post()
@@ -22,10 +26,23 @@ export class EmployeesController {
   }
 
   @Auth(ROLES.EMPLOYEE, ROLES.MANAGER)
+  @Post(':id/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadPhoto(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const response = await this.awsService.uploadFile(file);
+    return this.employeesService.update(id, {
+      employeePhoto: response,
+    });
+  }
+
+  @Auth(ROLES.EMPLOYEE, ROLES.MANAGER)
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  uploadPhoto(@UploadedFile() _file: Express.Multer.File) {
-    return "OK";
+  async upload(@UploadedFile() file: Express.Multer.File) {
+    return this.awsService.uploadFile(file);
   }
 
   @Auth(ROLES.MANAGER)
