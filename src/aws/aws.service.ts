@@ -24,11 +24,16 @@ export class AwsService {
   async uploadFile(file: Express.Multer.File): Promise<string> {
     const key = file.originalname;
 
+    const url =
+      this.region === 'us-east-1'
+        ? `https://${this.bucket}.s3.amazonaws.com/${key}`
+        : `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
+
     if (!process.env.ACCESS_KEY_BUCKET || !process.env.SECRET_KEY_BUCKET) {
       this.logger.warn(
         'AWS S3 credentials (ACCESS_KEY_BUCKET / SECRET_KEY_BUCKET) not found in environment. Mocking upload URL.',
       );
-      return `https://${this.bucket}.s3.amazonaws.com/${key}`;
+      return url;
     }
 
     const command = new PutObjectCommand({
@@ -43,6 +48,6 @@ export class AwsService {
       `File ${key} uploaded successfully to S3 bucket ${this.bucket}. HTTP status: ${response.$metadata.httpStatusCode}`,
     );
 
-    return `https://${this.bucket}.s3.amazonaws.com/${key}`;
+    return url;
   }
 }
