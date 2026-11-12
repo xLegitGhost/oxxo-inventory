@@ -21,8 +21,7 @@ export class CreateEmployeeDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsObject()
-  location?: Location;
+  location?: any;
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -13,32 +13,60 @@ export class EmployeesService {
   ) {}
 
   async create(createEmployeeDto: CreateEmployeeDto) {
-    const employee = this.employeeRepository.create(createEmployeeDto);
+    const dto: any = { ...createEmployeeDto };
+    if (dto.location && (typeof dto.location === 'string' || typeof dto.location === 'number')) {
+      dto.location = { locationId: +dto.location };
+    }
+    const employee = this.employeeRepository.create(dto as CreateEmployeeDto);
     return await this.employeeRepository.save(employee);
   }
 
   async findAll() {
-    return await this.employeeRepository.find();
+    return await this.employeeRepository.find({
+      relations: {
+        location: true,
+        user: true,
+      },
+    });
   }
 
   async findByLocation(id: number) {
-    return await this.employeeRepository.findBy({
-      location: {
-        locationId: id,
+    return await this.employeeRepository.find({
+      where: {
+        location: {
+          locationId: id,
+        },
+      },
+      relations: {
+        location: true,
+        user: true,
       },
     });
   }
 
   async findOne(id: string) {
-    const employee = await this.employeeRepository.findOneBy({ id });
+    const employee = await this.employeeRepository.findOne({
+      where: { id },
+      relations: {
+        location: true,
+        user: true,
+      },
+    });
     if (!employee) throw new NotFoundException(`Employee with id ${id} not found`);
     return employee;
   }
 
   async update(id: string, updateEmployeeDto: UpdateEmployeeDto) {
+    const dto: any = { ...updateEmployeeDto };
+    if (dto.location && (typeof dto.location === 'string' || typeof dto.location === 'number')) {
+      dto.location = { locationId: +dto.location };
+    }
+    if (dto.employeePhoto === undefined || dto.employeePhoto === '' || dto.employeePhoto === 'undefined') {
+      delete dto.employeePhoto;
+    }
     const employee = await this.employeeRepository.preload({
       id,
-      ...updateEmployeeDto,
+      ...dto,
     });
     if (!employee) throw new NotFoundException(`Employee with id ${id} not found`);
     return await this.employeeRepository.save(employee);

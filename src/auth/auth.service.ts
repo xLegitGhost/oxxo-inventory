@@ -1,6 +1,8 @@
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity.js';
+import { Employee } from '../employees/entities/employee.entity.js';
+import { Manager } from '../managers/entities/manager.entity.js';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { LoginUserDto } from './dto/login-user.dto.js';
@@ -13,6 +15,8 @@ export class AuthService {
 
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
+    @InjectRepository(Employee) private readonly employeeRepository: Repository<Employee>,
+    @InjectRepository(Manager) private readonly managerRepository: Repository<Manager>,
     private readonly jwtService: JwtService
   ){}
 
@@ -31,6 +35,52 @@ export class AuthService {
     });
 
     return this.userRepository.save(user);
+  }
+
+  async registerEmployee(id: string, createUserDto: CreateUserDto) {
+    const roles: string[] = Array.isArray(createUserDto.userRoles)
+      ? createUserDto.userRoles
+      : createUserDto.userRoles ? [createUserDto.userRoles as any] : [];
+
+    if (roles.includes('admin') || roles.includes('manager')) {
+      throw new BadRequestException('Rol inválido para empleado');
+    }
+
+    const user = await this.registerUser(createUserDto);
+
+    const employee = await this.employeeRepository.preload({
+      id,
+      user,
+    });
+
+    if (!employee) {
+      throw new NotFoundException(`Employee with id ${id} not found`);
+    }
+
+    return await this.employeeRepository.save(employee);
+  }
+
+  async registerManager(id: string, createUserDto: CreateUserDto) {
+    const roles: string[] = Array.isArray(createUserDto.userRoles)
+      ? createUserDto.userRoles
+      : createUserDto.userRoles ? [createUserDto.userRoles as any] : [];
+
+    if (roles.includes('admin')) {
+      throw new BadRequestException('Rol inválido para manager');
+    }
+
+    const user = await this.registerUser(createUserDto);
+
+    const manager = await this.managerRepository.preload({
+      managerId: id,
+      user,
+    });
+
+    if (!manager) {
+      throw new NotFoundException(`Manager with id ${id} not found`);
+    }
+
+    return await this.managerRepository.save(manager);
   }
 
   async loginUser(loginUserDto: LoginUserDto){
