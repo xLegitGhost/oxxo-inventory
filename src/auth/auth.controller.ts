@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Patch, Param } from '@nestjs/common';
+import { Controller, Post, Body, Patch, Param, Query, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { LoginUserDto } from './dto/login-user.dto.js';
@@ -18,6 +18,21 @@ export class AuthController {
   }
 
   @Auth(ROLES.MANAGER)
+  @Post('register/:id')
+  register(
+    @Param('id') id: string,
+    @Query('role') role: string,
+    @Body() createUserDto: CreateUserDto,
+  ) {
+    if (role === 'manager') {
+      return this.authService.registerManager(id, createUserDto);
+    } else if (role === 'employee') {
+      return this.authService.registerEmployee(id, createUserDto);
+    }
+    throw new BadRequestException('Rol no válido');
+  }
+
+  @Auth(ROLES.MANAGER)
   @Post('register-employee/:id')
   registerEmployee(@Param('id') id: string, @Body() createUserDto: CreateUserDto) {
     return this.authService.registerEmployee(id, createUserDto);
@@ -34,8 +49,8 @@ export class AuthController {
     return this.authService.loginUser(loginUserDto);
   }
 
-  @Patch(':email')
-  updateUser(@Param('email') email: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.authService.updateUser(email, updateUserDto);
+  @Patch(':id')
+  updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.authService.updateUser(id, updateUserDto);
   }
 }

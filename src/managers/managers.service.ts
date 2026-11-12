@@ -13,13 +13,18 @@ export class ManagersService {
   ) {}
 
   create(createManagerDto: CreateManagerDto) {
-    return this.managerRepository.save(createManagerDto);
+    const dto: any = { ...createManagerDto };
+    if (dto.location && (typeof dto.location === 'string' || typeof dto.location === 'number')) {
+      dto.location = { locationId: +dto.location };
+    }
+    return this.managerRepository.save(dto);
   }
 
   findAll() {
     return this.managerRepository.find({
       relations: {
         location: true,
+        user: true,
       },
     });
   }
@@ -31,6 +36,7 @@ export class ManagersService {
       },
       relations: {
         location: true,
+        user: true,
       },
     });
     if (!manager) throw new NotFoundException(`Manager with id ${id} not found`);
@@ -38,9 +44,13 @@ export class ManagersService {
   }
 
   async update(id: string, updateManagerDto: UpdateManagerDto) {
+    const dto: any = { ...updateManagerDto };
+    if (dto.location && (typeof dto.location === 'string' || typeof dto.location === 'number')) {
+      dto.location = { locationId: +dto.location };
+    }
     const newManager = await this.managerRepository.preload({
       managerId: id,
-      ...updateManagerDto,
+      ...dto,
     });
 
     if (!newManager) throw new NotFoundException(`Manager with id ${id} not found`);

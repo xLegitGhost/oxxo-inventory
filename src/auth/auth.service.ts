@@ -113,14 +113,20 @@ export class AuthService {
     return token;
   }
 
-  async updateUser(userEmail: string, updateUserDto: UpdateUserDto) {
-    const newUserData = await this.userRepository.preload({
-      userEmail,
-      ...updateUserDto,
-    });
+  async updateUser(idOrEmail: string, updateUserDto: UpdateUserDto) {
+    const isUUID = idOrEmail.includes('-') && idOrEmail.length === 36;
+    const dto = { ...updateUserDto };
+    if (dto.userPassword) {
+      dto.userPassword = await bcrypt.hash(dto.userPassword, 10);
+    }
+    const preloadCriteria = isUUID
+      ? { userId: idOrEmail, ...dto }
+      : { userEmail: idOrEmail, ...dto };
+
+    const newUserData = await this.userRepository.preload(preloadCriteria);
 
     if (!newUserData) {
-      throw new NotFoundException(`User with email ${userEmail} not found`);
+      throw new NotFoundException(`User with identifier ${idOrEmail} not found`);
     }
 
     return this.userRepository.save(newUserData);
